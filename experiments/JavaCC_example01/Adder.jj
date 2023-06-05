@@ -1,0 +1,42 @@
+options {
+    STATIC = false;
+}
+
+PARSER_BEGIN(Adder)
+import java.io.*;
+
+class Adder {
+    static public void main(String[] args) {
+        for (String arg : args) {
+            try {
+                System.out.println(evaluate(arg));
+            }
+            catch (ParseException ex) {
+                System.err.println(ex.getMessage());
+            }
+        }
+    }
+
+    static public long evaluate(String src) throws ParseException {
+        Reader reader = new StringReader(src);
+        return new Adder(reader).expr();
+    }
+}
+PARSER_END(Adder)
+
+SKIP: { <[" ", "\t", "\r", "\n"]> }
+
+TOKEN: {
+    <INTEGER:(["0"-"9"])+>
+}
+
+long expr():
+{
+    Token x, y;
+}
+{
+    x=<INTEGER> "+" y=<INTEGER> <EOF>
+        {
+            return Long.parseLong(x.image)+ Long.parseLong(y.image);
+        }
+}
