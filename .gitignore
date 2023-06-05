@@ -7,3 +7,4 @@
 sh.exe.stackdump
 /hooks/
 /lfs/
+/*/*/build/
