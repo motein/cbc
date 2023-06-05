@@ -1,5 +1,6 @@
 options {
     STATIC = false;
+    JDK_VERSION = "1.8";
 }
 
 PARSER_BEGIN(Adder)
