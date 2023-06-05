@@ -3,6 +3,7 @@ options {
 }
 
 PARSER_BEGIN(Adder)
+package test;
 import java.io.*;
 
 class Adder {
