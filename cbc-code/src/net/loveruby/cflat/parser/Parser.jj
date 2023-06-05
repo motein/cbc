@@ -11,6 +11,7 @@ PARSER_BEGIN(Parser)
 package net.loveruby.cflat.parser;
 import net.loveruby.cflat.ast.*;
 import net.loveruby.cflat.entity.*;
+import net.loveruby.cflat.entity.Parameter;
 import net.loveruby.cflat.type.*;
 import net.loveruby.cflat.asm.Label;
 import net.loveruby.cflat.utils.ErrorHandler;
