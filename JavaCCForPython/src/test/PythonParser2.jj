@@ -1,0 +1,54 @@
+// PythonParser.jj
+
+options {
+  STATIC = false;
+}
+
+PARSER_BEGIN(PythonParser)
+import java.io.*;
+
+public class PythonParser {
+  public static void main(String[] args) throws ParseException {
+    PythonParser parser = new PythonParser(System.in);
+    try {
+      parser.program();
+      System.out.println("Parsing successful.");
+    } catch (ParseException e) {
+      System.out.println("Parsing failed: " + e.getMessage());
+    }
+  }
+}
+
+PARSER_END(PythonParser)
+
+SKIP : {
+  " " | "\t" | "\n" | "\r"
+}
+
+TOKEN : {
+  <IDENTIFIER: (["a"-"z", "A"-"Z"])+>
+}
+
+void program() :
+{}
+{
+  statement()*
+}
+
+void statement() :
+{}
+{
+  assignmentStatement()
+}
+
+void assignmentStatement() :
+{}
+{
+  <IDENTIFIER> "=" expression() ";"
+}
+
+void expression() :
+{}
+{
+  <IDENTIFIER>
+}

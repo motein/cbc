@@ -8,6 +8,8 @@
 ### 2. eclipse
 - eclipse oxygen
 - JDK 1.8
+- JavaCC Eclipse Plug-in
+  - Install it in Eclipse Marketplace Client.
 
 ### 3. JavaCC
 - javacc 7.0.10
