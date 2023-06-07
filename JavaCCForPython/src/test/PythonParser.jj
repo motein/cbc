@@ -1,0 +1,85 @@
+PARSER_BEGIN(PythonParser)
+import java.io.*;
+import java.util.*;
+
+public class PythonParser {
+  public static void main(String[] args) {
+    try {
+      PythonParser parser = new PythonParser(new FileInputStream("input.py"));
+      parser.program();
+    } catch (ParseException e) {
+      e.printStackTrace();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+  }
+}
+
+PARSER_END(PythonParser)
+
+SKIP: {
+  " "
+| "\t"
+| "\n"
+}
+
+TOKEN: {
+  < IDENTIFIER: (["a"-"z", "A"-"Z"])+ >
+| < INTEGER: (["0"-"9"])+ >
+| < STRING: "\"" (~["\""])* "\"" >
+| < IF: "if" >
+| < ELSE: "else" >
+| < WHILE: "while" >
+| < PRINT: "print" >
+}
+
+void program() :
+{}
+{
+  (statement())*
+}
+
+void statement() :
+{}
+{
+  (ifStatement() | whileStatement() | printStatement())
+}
+
+void ifStatement() :
+{}
+{
+  <IF> "(" expression() ")" statement() [<ELSE> statement()]
+}
+
+void whileStatement() :
+{}
+{
+  <WHILE> "(" expression() ")" statement()
+}
+
+void printStatement() :
+{}
+{
+  <PRINT> expression() ";"
+}
+
+int expression() :
+{}
+{
+  (term()) ( ("+" | "-") term() )*
+}
+
+int term() :
+{}
+{
+  factor() ( ("*" | "/") factor() )*
+}
+
+int factor() :
+{}
+{
+  <INTEGER>
+| <IDENTIFIER>
+| "(" expression() ")"
+}
+
