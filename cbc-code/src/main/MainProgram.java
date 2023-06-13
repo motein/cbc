@@ -20,7 +20,7 @@ public class MainProgram {
 	public static void main(String[] args) {
 		System.out.println(System.getProperty("user.dir"));
 		
-		String path = String.format("%s\\%s", System.getProperty("user.dir").split("src\\main\\add.cb"));
+		String path = String.format("%s\\%s", System.getProperty("user.dir"), "src\\main\\add.cb");
 		Options opts = parseOptions(args);
 		try {
 			AST ast = Parser.parseFile(new File(path), opts.loader(), errorHandler, opts.doesDebugParser());
