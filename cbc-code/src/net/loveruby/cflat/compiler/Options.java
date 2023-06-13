@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.io.PrintStream;
 
-class Options {
-    static Options parse(String[] args) {
+public class Options {
+    public static Options parse(String[] args) {
         Options opts = new Options();
         opts.parseArgs(args);
         return opts;
@@ -90,11 +90,11 @@ class Options {
         return this.verbose;
     }
 
-    boolean doesDebugParser() {
+    public boolean doesDebugParser() {
         return this.debugParser;
     }
 
-    LibraryLoader loader() {
+    public LibraryLoader loader() {
         return this.loader;
     }
 
