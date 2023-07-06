@@ -2,12 +2,17 @@ package net.loveruby.cflat.type;
 import net.loveruby.cflat.ast.Location;
 
 public class VoidTypeRef extends TypeRef {
+	protected String name;
+	
     public VoidTypeRef() {
         super(null);
+        name = "void";
+        
     }
 
     public VoidTypeRef(Location loc) {
         super(loc);
+        name = "void";
     }
 
     public boolean isVoid() {
@@ -19,6 +24,14 @@ public class VoidTypeRef extends TypeRef {
     }
 
     public String toString() {
-        return "void";
+        return name;
+    }
+    
+    static public VoidTypeRef voidRef(Location loc) {
+        return new VoidTypeRef(loc);
+    }
+    
+    static public VoidTypeRef voidRef() {
+        return new VoidTypeRef();
     }
 }
