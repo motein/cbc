@@ -1,1 +1,11 @@
+For build0.xml file:
+ant -f build0.xml clean
 ant -f build0.xml compile
+ant -f build0.xml jar
+ant -f build0.xml run
+
+For build.xml file with properties embeded(dependencies):
+ant -f build1.xml main
+
+For build.xml + build.properties files(referenced):
+ant -f build.xml
