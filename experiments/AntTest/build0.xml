@@ -13,7 +13,7 @@
         <mkdir dir="build/jar"/>
         <jar destfile="build/jar/HelloWorld.jar" basedir="build/classes">
             <manifest>
-                <attribute name="Main-Class" value="ant.HelloWorld"/>
+                <attribute name="Main-Class" value="mine.HelloWorld"/>
             </manifest>
         </jar>
     </target>
