@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="JJTreeTest" default="compile" basedir=".">
+    <target name="init">
+        <property file="${user.home}/.ant-global.properties" />
+        <property file="build.properties" />
+    </target>
+
+    <target name="parser" depends="init">
+        <jjtree target="${src.jjt.file}" outputdirectory="${build.parser.dir}" javacchome="${javacc.dir}"/>
+		<javacc target="${src.jj.file}" javacchome="${javacc.dir}" />
+    </target>
+
+    <target name="compile" depends="init, parser">
+        <mkdir dir="${build.dir}" />
+        <mkdir dir="${build.classes.dir}" />
+        <javac destdir="${build.classes.dir}" srcdir="${src.dir}"
+               debug="true" optimize="true">
+            <compilerarg value="-Xlint:unchecked" />
+            <include name="./main/*.java" />
+        </javac>
+        <jar jarfile="${build.jar}" basedir="${build.classes.dir}" />
+    </target>
+
+    <target name="recompile" depends="clean, compile" />
+
+    <target name="clean" depends="init, clean-build">
+		<delete file="${build.parser.dir}/test.jj" />
+		<delete dir="${build.lib}" />
+    </target>
+
+    <target name="clean-build" depends="init">
+        <delete dir="${build.dir}" />
+    	<delete>
+    	    <fileset dir="${build.parser.dir}" includes="*.java" />
+    	</delete>
+    </target>
+
+    <target name="dist">
+        <antcall target="clean" />
+        <antcall target="compile" />
+        <antcall target="clean-build" />
+    </target>
+</project>
