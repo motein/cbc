@@ -1,0 +1,987 @@
+options {
+    STATIC = false;
+    JDK_VERSION = "1.8";
+}
+
+PARSER_BEGIN(RMBParser)
+package editors.rmb.parser;
+
+import java.io.*;
+import java.util.*;
+import java.lang.reflect.*;
+import editors.rmb.parser.ast.*;
+import editors.rmb.parser.exception.*;
+import editors.rmb.parser.type.*;
+import editors.rmb.parser.entity.*;
+import editors.rmb.parser.entity.Parameter;
+import editors.rmb.parser.utils.ErrorHandler;
+
+public class RMBParser {
+
+	static public AST parseFile(File file, LibraryLoader loader,
+                                ErrorHandler errorHandler)
+                                throws SyntaxException, FileException {
+        return parseFile(file, loader, errorHandler, false); // turn off debugging by default
+    }
+
+	static public AST parseFile(File file, LibraryLoader loader,
+                                ErrorHandler errorHandler, boolean debug)
+                                throws SyntaxException, FileException {
+        return newFileParser(file, loader, errorHandler, debug).parse();
+    }
+
+	static public Declarations parseDeclFile(File file,
+                                             LibraryLoader loader,
+                                             ErrorHandler errorHandler)
+                                             throws SyntaxException,
+                                                    FileException {
+        return parseDeclFile(file, loader, errorHandler, false);
+    }
+
+    static public Declarations parseDeclFile(File file,
+                                             LibraryLoader loader,
+                                             ErrorHandler errorHandler,
+                                             boolean debug)
+                                             throws SyntaxException,
+                                                    FileException {
+        return newFileParser(file, loader, errorHandler, debug).parseDecls();
+    }
+
+    static final public String SOURCE_ENCODING = "UTF-8";
+
+    static public RMBParser newFileParser(File file,
+                                       LibraryLoader loader,
+                                       ErrorHandler errorHandler,
+                                       boolean debug)
+                                       throws FileException {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), SOURCE_ENCODING));
+            return new RMBParser(br, file.getPath(), loader, errorHandler, debug);
+        }
+        catch (FileNotFoundException ex) {
+            throw new FileException(ex.getMessage());
+        }
+        catch (UnsupportedEncodingException ex) {
+            throw new Error("UTF-8 is not supported??: " + ex.getMessage());
+        }
+    }
+
+    private String sourceName;
+    private LibraryLoader loader;
+    private ErrorHandler errorHandler;
+    private Set<String> knownTypedefs;
+
+    // constructor
+    private RMBParser(Reader s, String name, LibraryLoader loader, ErrorHandler errorHandler) {
+		this(s, name, loader, errorHandler, false); // turn off debugging by default
+	}
+
+	// constructor
+    private RMBParser(Reader s, String name, LibraryLoader loader, ErrorHandler errorHandler, boolean debug) {
+    	this(s);
+    	this.sourceName = name;
+    	this.loader = loader;
+    	this.errorHandler = errorHandler;
+    	this.knownTypedefs = new HashSet<String>();
+    	if (debug) {
+    		enable_tracing();
+    	}
+    	else {
+    		disable_tracing();
+    	}
+    }
+    
+    private AST parse() throws SyntaxException {
+        try {
+            return compilation_unit();
+        }
+        catch (TokenMgrError err) {
+            throw new SyntaxException(err.getMessage());
+        }
+        catch (ParseException ex) {
+            throw new SyntaxException(ex.getMessage());
+        }
+        catch (LookaheadSuccess err) {
+            throw new SyntaxException("syntax error");
+        }
+    }
+
+    private Declarations parseDecls() throws SyntaxException {
+        try {
+            return declaration_file();
+        }
+        catch (TokenMgrError ex) {
+            throw new SyntaxException(ex.getMessage());
+        }
+        catch (ParseException ex) {
+            throw new SyntaxException(ex.getMessage());
+        }
+    }
+
+    private void addKnownTypedefs(List<TypedefNode> typedefs) {
+        for (TypedefNode n : typedefs) {
+            addType(n.name());
+        }
+    }
+
+    private void addType(String name) {
+        knownTypedefs.add(name);
+    }    
+
+    private IntegerLiteralNode integerNode(Location loc, String image) {
+        long i = integerValue(image);
+        return new IntegerLiteralNode(loc, IntegerTypeRef.intRef(), i);
+    }
+
+    private RealLiteralNode realNode(Location loc, String image) {
+        double i = Double.parseDouble(image);
+        return new RealLiteralNode(loc, RealTypeRef.realRef(), i);
+    }
+
+    private long integerValue(String image) {
+        String s = image;
+        if (s.startsWith("0x") || s.startsWith("0X")) { // hex
+            return Long.parseLong(s.substring(2), 16);
+        }
+        else if (s.startsWith("0") && !s.equals("0")) { // octal
+            return Long.parseLong(s.substring(1), 8);
+        }
+        else {
+            return Long.parseLong(s, 10); // decimal
+        }
+    }
+
+    private String stringValue(String _image) throws ParseException {
+        int pos = 0;
+        int idx;
+        StringBuffer buf = new StringBuffer();
+        String image = _image.substring(1, _image.length() - 1);
+
+        while ((idx = image.indexOf("\\", pos)) >= 0) {
+            buf.append(image.substring(pos, idx));
+            if (image.length() >= idx + 4
+                    && Character.isDigit(image.charAt(idx+1))
+                    && Character.isDigit(image.charAt(idx+2))
+                    && Character.isDigit(image.charAt(idx+3))) {
+                buf.append(unescapeOctal(image.substring(idx+1, idx+4)));
+                pos = idx + 4;
+            }
+            else {
+                buf.append(unescapeSeq(image.charAt(idx+1)));
+                pos = idx + 2;
+            }
+        }
+        if (pos < image.length()) {
+            buf.append(image.substring(pos, image.length()));
+        }
+        return buf.toString();
+    }
+
+    private static final int charMax = 255;
+
+    private char unescapeOctal(String digits) throws ParseException {
+        int i = Integer.parseInt(digits, 8);
+        if (i > charMax) {
+            throw new ParseException("octal character sequence too big: \\" + digits);
+        }
+        return (char)i;
+    }
+
+    private static final char bell = 7;
+    private static final char backspace = 8;
+    private static final char escape = 27;
+    private static final char vt = 11;
+
+    private char unescapeSeq(char c) throws ParseException {
+        switch (c) {
+        case '0': return '\0';
+        case '"': return '"';
+        case '\'': return '\'';
+        case 'a': return bell;
+        case 'b': return backspace;
+        case 'e': return escape;
+        case 'f': return '\f';
+        case 'n': return '\n';
+        case 'r': return '\r';
+        case 't': return '\t';
+        case 'v': return vt;
+        default:
+            throw new ParseException("unknown escape sequence: \"\\" + c);
+        }
+    }
+
+    protected Location location(Token t) {
+        return new Location(sourceName, t);
+    }
+}
+
+PARSER_END(RMBParser)
+
+/*
+ * Lexical Rules
+ */
+// linear-white-spaces
+SPECIAL_TOKEN: { <SPACES: ([" ", "\t", "\f"])+> }
+
+// new line
+SPECIAL_TOKEN: { <NEWLINE: (["\n", "\r"])+> }
+
+// line comment
+SPECIAL_TOKEN: {
+    <LINE_COMMENT: "!" (~["\n", "\r"])* ("\n" | "\r\n" | "\r")?>
+}
+
+// reserved words
+TOKEN: {
+      <INTEGER  : "INTEGER">
+    | <REAL     : "REAL">
+    | <COMPLEX  : "COMPLEX">
+    | <DIM      : "DIM">      // array
+    | <REDIM    : "REDIM">    // array
+    | <MAT      : "MAT">      // array
+    | <LET      : "LET">      // string
+    | <IF       : "IF">
+    | <THEN     : "THEN">
+    | <ELSE     : "ELSE">
+    | <SELECT   : "SELECT">
+    | <CASE     : "CASE">
+    | <WHILE    : "WHILE">
+    | <FOR      : "FOR">
+    | <TO       : "TO">
+    | <STEP     : "STEP">
+    | <NEXT     : "NEXT">
+    | <REPEAT   : "REPEAT">
+    | <UNTIL    : "UNTIL">
+    | <LOOP     : "LOOP">
+    | <RETURN   : "RETURN">
+    | <GET      : "GET">
+    | <SUB      : "SUB">
+    | <SUBEND   : "SUBEND">
+    | <GOTO     : "GOTO">
+    | <GOSUB    : "GOSUB">
+    | <DEF      : "DEF">
+    | <FNEND	: "FNEND">
+    | <COM      : "COM">
+    | <PAUSE    : "PAUSE">
+    | <STOP     : "STOP">
+    | <END      : "END">
+    | <NOT      : "NOT">
+    | <DIV      : "DIV">
+    | <EXOR     : "EXOR">
+    | <OR       : "OR">
+    | <AND      : "AND">
+    | <MOD      : "MOD">
+    | <LOADSUB  : "LOADSUB">
+    | <ALL      : "ALL">
+    | <FROM     : "FROM">
+    | <CALL     : "CALL">   // call
+    | <OPTION   : "OPTION"> // option
+    | <BASE     : "BASE">   // base
+    | <EXIT     : "EXIT">   // exit
+}
+
+// identifier
+TOKEN: {
+    <IDENTIFIER: ["a"-"z", "A"-"Z", "_"] (["a"-"z", "A"-"Z", "_", "0"-"9"])*("$")?>
+}
+
+// integer literals
+TOKEN: {
+    <INTEGER_LITERAL: ("-")?["1"-"9"] (["0"-"9"])*>
+}
+
+// real literals
+TOKEN: {
+    <REAL_LITERAL: (["-"])? (["0"-"9"])+ (["."](["0"-"9"])*)? ((("e"|"E")(["-"])? (["0"-"9"])+)?) >
+}
+
+// string/character literal
+TOKEN: {
+  <STRING_LITERAL: "\"" (~["\""])* "\"" >
+}
+
+AST compilation_unit():
+{
+    Token t;
+    Declarations impdecls, decls;
+}
+{
+        {
+            t = getToken(1);
+        }
+    impdecls=import_stmts() decls=top_defs() <EOF>
+        {
+            decls.add(impdecls);
+            return new AST(location(t), decls);
+        }
+}
+
+Declarations declaration_file():
+{
+    Declarations impdecls, decls = new Declarations();
+    UndefinedFunction funcdecl;
+    UndefinedVariable vardecl;
+}
+{
+    impdecls=import_stmts()
+        {
+            decls.add(impdecls);
+        }
+    ( LOOKAHEAD(<COM> typeref() <IDENTIFIER> "(")
+      funcdecl=funcdecl()   { decls.addFuncdecl(funcdecl); }
+    | vardecl=vardecl()     { decls.addVardecl(vardecl); }
+    )*
+    <EOF>
+        {
+            return decls;
+        }
+}
+
+UndefinedFunction funcdecl():
+{
+    TypeRef ret;
+    String n;
+    Params ps;
+}
+{
+    <COM> ret=typeref() n=name() "(" ps=params() ")" (";")?
+        {
+            TypeRef t = new FunctionTypeRef(ret, ps.parametersTypeRef());
+            return new UndefinedFunction(new TypeNode(t), n, ps);
+        }
+}
+
+UndefinedVariable vardecl():
+{
+    TypeNode t;
+    String n;
+}
+{
+    <COM> t=type() n=name() (";")?
+        {
+            return new UndefinedVariable(t, n);
+        }
+}
+
+Declarations import_stmts(): // import all libraries
+{
+    String libPath;
+    Declarations impdecls = new Declarations(); // import Declarations
+}
+{
+    (libPath=import_stmt()
+        {
+            try {
+              	System.out.println("Import Lib Path: " + libPath);
+                Declarations decls = loader.loadLibrary(libPath, errorHandler);
+                if (decls != null) {
+                    impdecls.add(decls);
+                    addKnownTypedefs(decls.typedefs());
+                }
+            }
+            catch (CompileException ex) {
+                throw new ParseException(ex.getMessage());
+            }
+        }
+    )*
+        {
+            return impdecls;
+        }
+}
+
+String import_stmt(): // import single library
+{
+  	Token stringToken;
+}
+{
+    <LOADSUB><ALL><FROM>stringToken=<STRING_LITERAL>
+        {
+          	String libPath = stringToken.image;
+            return libPath.substring(1, libPath.length()-1); // remove "
+        }
+}
+
+Declarations top_defs():
+{
+    Declarations decls = new Declarations();
+    DefinedFunction defun;
+    List<DefinedVariable> defvars;
+    StmtNode stmt;
+}
+{
+    (LOOKAHEAD(<IDENTIFIER>":"<SUB><IDENTIFIER> "(")
+    defun=defun_with_label()         { decls.addDefun(defun); } // define function with label
+    | LOOKAHEAD(<SUB><IDENTIFIER> "(")
+      defun=defun_without_label()         { decls.addDefun(defun); } // define function without label
+    | LOOKAHEAD(2)
+      defvars=defvars()     { decls.addDefvars(defvars); } // define variable
+    | stmt=stmt() 		{ decls.addStmt(stmt); } // global statement
+    )*
+        {
+            return decls;
+        }
+}
+
+Params params(): // fixed parameters
+{
+    List<Parameter> params = new ArrayList<Parameter>();
+    Parameter param, param1;
+    TypeNode t;
+    String n;
+    boolean isMatched = false;
+}
+{
+    param1=param()
+		{
+		  	params.add(param1);
+		  	t = param1.typeNode();
+		}
+    (LOOKAHEAD(2)
+	"," param=param()
+		{
+		  	params.add(param);
+		  	t = param.typeNode(); // keep TypeNode
+		}
+	| "," n=name()("(*)" { isMatched = true; })?
+		{
+	  		param = new Parameter(t, n, isMatched); // Use the previous TypeNode for default type
+	  		params.add(param);
+	  		isMatched = false;
+		}
+	)*
+        {
+            return new Params(param1.location(), params);
+        }
+}
+
+DefinedFunction defun_with_label():
+{
+    Token t;
+    String n;
+    Params ps;
+    BlockNode body;
+}
+{
+  	t=<IDENTIFIER>":"<SUB>n=name() "("ps=params() ")"body=block()<SUBEND>
+        {
+          	System.err.println("Labeled SUB -> " + t.toString());
+          	TypeRef t1 = VoidTypeRef.voidRef(location(t));
+        	TypeRef t2 = new FunctionTypeRef(t1, ps.parametersTypeRef());
+            return new DefinedFunction(true, t.toString(), new TypeNode(t2), n, ps, body);
+        }
+}
+
+DefinedFunction defun_without_label():
+{
+    Token t;
+    String n;
+    Params ps;
+    BlockNode body;
+}
+{
+    t=<SUB>n=name() "(" ps=params() ")" body=block()<SUBEND>
+        {
+          	TypeRef t1 = VoidTypeRef.voidRef(location(t));
+        	TypeRef t2 = new FunctionTypeRef(t1, ps.parametersTypeRef());
+            return new DefinedFunction(true, new TypeNode(t2), n, ps, body);
+        }
+}
+
+List<DefinedVariable> defvars():
+{
+    List<DefinedVariable> defs = new ArrayList<DefinedVariable>();
+    TypeNode type;
+    String name;
+}
+{
+    	type=type() name=name() // cannot initialize while declaring.
+        {
+            defs.add(new DefinedVariable(true, type, name)); // not COM, so true.
+        }
+        (","name=name()
+        {
+          	defs.add(new DefinedVariable(true, type, name));
+        })*
+        {
+            return defs;
+        }
+}
+
+List<DefinedVariable> defvar_list():
+{
+    List<DefinedVariable> result = new ArrayList<DefinedVariable>();
+    List<DefinedVariable> vars;
+}
+{
+    ( vars=defvars() { result.addAll(vars); } )*
+        {
+            return result;
+        }
+}
+
+BlockNode block():
+{
+    Token t;
+    List<DefinedVariable> vars;
+    List<StmtNode> stmts;
+}
+{
+  		{
+  		  	t=getToken(1);
+  		}
+    	vars=defvar_list() stmts=stmts()
+        {
+            return new BlockNode(location(t), vars, stmts);
+        }
+}
+
+Parameter param():
+{
+    TypeNode t;
+    String n;
+}
+{
+    t=type() n=name()("(*)" { return new Parameter(t, n, true); })?
+	{
+	  return new Parameter(t, n, false);
+	}
+}
+
+String name():
+{ Token t; }
+{
+    t=<IDENTIFIER> { return t.image; } // same as IDENTIFIER
+}
+
+TypeRef typeref_base():
+{
+    Token t, name;
+}
+{
+      t=<INTEGER>       { return IntegerTypeRef.intRef(location(t)); }
+    | t=<REAL>          { return RealTypeRef.realRef(location(t)); }
+    | t=<COMPLEX>       { return ComplexTypeRef.complexRef(location(t)); }
+}
+
+TypeRef typeref():
+{
+    TypeRef ref;
+    Token t;
+    ParamTypeRefs params;
+}
+{
+    ref=typeref_base()
+    ( LOOKAHEAD(2)
+      "(" t=<INTEGER_LITERAL> ")" // just 1 dimensional array; consider more later
+        {
+            ref = new ArrayTypeRef(ref, integerValue(t.image)); // fixed size array
+        }
+    )*
+        {
+            return ref;
+        }
+}
+
+TypeNode type():
+{ TypeRef ref; }
+{
+    ref=typeref() { return new TypeNode(ref); }
+}
+
+List<ExprNode> args():
+{
+    List<ExprNode> args = new ArrayList<ExprNode>();
+    ExprNode arg;
+}
+{
+    [ arg=expr() { args.add(arg); }
+      ("," arg=expr() { args.add(arg); })* ]
+        {
+            return args;
+        }
+}
+
+List<ExprNode> args2(): // at least 1 argument
+{
+    List<ExprNode> args = new ArrayList<ExprNode>();
+    ExprNode arg;
+}
+{
+   	arg=expr() { args.add(arg); }
+     ("," arg=expr() { args.add(arg); })*
+       {
+           return args;
+       }
+}
+
+ExprNode postfix():
+{
+    ExprNode expr, idx;
+    String memb;
+    List<ExprNode> args;
+}
+{
+	expr=primary()
+//    ("(" idx=expr() ")"    { expr = new ArefNode(expr, idx); } // array; define it later
+//    | "(" args=args() ")"   { expr = new FuncallNode(expr, args); }
+    ("(" args=args() ")"   { expr = new FuncallNode(expr, args); }
+    )*
+        {
+            return expr;
+        }
+}
+
+ExprNode unary():
+{
+    ExprNode n;
+    TypeNode t;
+}
+{
+      "+" n=term()      { return new UnaryOpNode("+", n); }
+    | "-" n=term()      { return new UnaryOpNode("-", n); }
+    | <NOT> n=term()      { return new UnaryOpNode("!", n); }
+    | n=postfix()       { return n; }
+}
+
+ExprNode term():
+{
+    TypeNode t;
+    ExprNode n;
+}
+{
+      n=unary()                     { return n; }
+}
+
+ExprNode expr():
+{
+    ExprNode lhs, rhs, expr;
+    String op;
+}
+{
+      LOOKAHEAD(term() "=")
+      lhs=term() "=" rhs=expr()
+        {
+            return new AssignNode(lhs, rhs);
+        }
+    | expr=expr9()
+        {
+            return expr;
+        }
+}
+
+ExprNode expr1():
+{ ExprNode l, r; }
+{
+    l=term() ( "*" r=term() { l = new BinaryOpNode(l, "*", r); }
+             | "/" r=term() { l = new BinaryOpNode(l, "/", r); }
+             | <MOD> r=term() { l = new BinaryOpNode(l, "MOD", r); }
+             | <DIV> r=term() { l = new BinaryOpNode(l, "DIV", r); }
+             )*
+        {
+            return l;
+        }
+}
+
+ExprNode expr2():
+{ ExprNode l, r; }
+{
+    l=expr1() ( "+" r=expr1() { l = new BinaryOpNode(l, "+", r); }
+              | "-" r=expr1() { l = new BinaryOpNode(l, "-", r); }
+              )*
+        {
+            return l;
+        }
+}
+
+ExprNode expr5():
+{ ExprNode l, r; }
+{
+    l=expr2() (<EXOR> r=expr2() { l = new BinaryOpNode(l, "EXOR", r); })* // XOR Operator
+        {
+            return l;
+        }
+}
+
+ExprNode expr7():
+{ ExprNode l, r; }
+{
+    l=expr5() ( ">"  r=expr5() { l = new BinaryOpNode(l, ">", r); }
+              | "<"  r=expr5() { l = new BinaryOpNode(l, "<", r); }
+              | ">=" r=expr5() { l = new BinaryOpNode(l, ">=", r); }
+              | "<=" r=expr5() { l = new BinaryOpNode(l, "<=", r); }
+              | "=" r=expr5() { l = new BinaryOpNode(l, "=", r); } // equal
+              | "<>" r=expr5() { l = new BinaryOpNode(l, "<>", r); } )* // not equal
+        {
+            return l;
+        }
+}
+
+ExprNode expr8():
+{ ExprNode l, r; }
+{
+    l=expr7() (<AND> r=expr7() { l = new LogicalAndNode(l, r); })*
+        {
+            return l;
+        }
+}
+
+ExprNode expr9():
+{ ExprNode l, r; }
+{
+    l=expr8() (<OR> r=expr8() { l = new LogicalOrNode(l, r); })*
+        {
+            return l;
+        }
+}
+
+List<StmtNode> stmts():
+{
+    List<StmtNode> ss = new ArrayList<StmtNode>();
+    StmtNode s;
+}
+{
+    (s=stmt() { if (s != null) ss.add(s); })*
+        {
+            return ss;
+        }
+}
+
+StmtNode stmt():
+{
+    StmtNode n = null;
+    ExprNode e = null;
+}
+{
+    ( LOOKAHEAD(3)n=option_base_stmt()
+ 	| LOOKAHEAD(2)n=labeled_stmt()
+    | e=expr() { n = new ExprStmtNode(e.location(), e); }
+    | n=loop_stmt()
+    | n=repeat_stmt()
+    | n=if_stmt()
+    | n=while_stmt()
+    | n=for_stmt()
+    | n=switch_stmt()
+//    | n=break_stmt()
+//    | n=continue_stmt()
+    | n=goto_stmt()
+    | n=gosub_stmt()
+    | n=return_stmt()
+    )
+        {
+            return n;
+        }
+}
+
+OptionBaseNode option_base_stmt():
+{
+    Token t, n;
+}
+{
+    t=<OPTION><BASE>n=<INTEGER_LITERAL>
+        {
+            return new OptionBaseNode(location(t), integerValue(n.image));
+        }
+}
+
+LabelNode labeled_stmt(): // e.g., for goto statement
+{
+    Token t;
+    StmtNode n;
+}
+{
+    t=<IDENTIFIER> ":" n=stmt()
+        {
+            return new LabelNode(location(t), t.image, n);
+        }
+}
+
+GotoNode goto_stmt():
+{ Token t, name; }
+{
+  
+    LOOKAHEAD(2) t=<GOTO> name=<INTEGER_LITERAL> { return new GotoNode(location(t), name.image, false); }
+  | LOOKAHEAD(2) t=<GOTO>name=<IDENTIFIER> { return new GotoNode(location(t), name.image, true); }
+}
+
+GoSubNode gosub_stmt():
+{ Token t, name; }
+{
+  
+    LOOKAHEAD(2) t=<GOSUB> name=<INTEGER_LITERAL> { return new GoSubNode(location(t), name.image, false); }
+  | LOOKAHEAD(2) t=<GOSUB>name=<IDENTIFIER> { return new GoSubNode(location(t), name.image, true); }
+}
+
+ReturnNode return_stmt():
+{
+    Token t;
+    ExprNode expr;
+}
+{
+      LOOKAHEAD(2) t=<RETURN> { return new ReturnNode(location(t), null); }
+    | t=<RETURN> expr=expr() { return new ReturnNode(location(t), expr); }
+}
+
+IfNode if_stmt():
+{
+    Token t;
+    ExprNode cond;
+    StmtNode thenBody, elseBody = null;
+}
+{
+    t=<IF> "(" cond=expr() ")"<THEN> thenBody=stmt()
+            [LOOKAHEAD(1) <ELSE> elseBody=stmt()]<END><IF>
+        {
+            return new IfNode(location(t), cond, thenBody, elseBody);
+        }
+}
+
+WhileNode while_stmt():
+{
+    Token t;
+    ExprNode cond;
+    StmtNode body;
+}
+{
+    t=<WHILE> cond=expr() body=stmt()<END><WHILE>
+        {
+            return new WhileNode(location(t), cond, body);
+        }
+}
+
+ForNode for_stmt():
+{
+    Token t;
+    ExprNode init = null, cond = null, incr = null;
+    StmtNode body;
+}
+{
+    t=<FOR> [init=expr()]
+              [<TO>cond=expr()]
+              [<STEP>incr=expr()] body=stmt()<NEXT><IDENTIFIER>
+        {
+            return new ForNode(location(t), init, cond, incr, body);
+        }
+}
+
+LoopNode loop_stmt():
+{
+    Token t;
+    List<ExprNode> conds = new ArrayList<ExprNode>();
+    List<StmtNode> stmts = new ArrayList<StmtNode>();
+    ExprNode cond = null;
+    StmtNode stmt = null;
+}
+{
+    t=<LOOP>(stmt=stmt() { stmts.add(stmt); }
+    | <EXIT><IF>cond=expr() { conds.add(cond); })*<END><LOOP>
+        {
+            return new LoopNode(location(t), conds, stmts);
+        }
+}
+
+RepeatNode repeat_stmt():
+{
+    Token t;
+    ExprNode cond;
+    List<StmtNode> body = new ArrayList<StmtNode>();
+    StmtNode stmt;
+}
+{
+    t=<REPEAT> (stmt=stmt() { body.add(stmt); })*<UNTIL>cond=expr()
+        {
+            return new RepeatNode(location(t), cond, body);
+        }
+}
+
+SwitchNode switch_stmt():
+{
+    Token t;
+    ExprNode cond;
+    List<CaseNode> bodies;
+}
+{
+    t=<SELECT> cond=expr() bodies=case_clauses()<END><SELECT>
+        {
+            return new SwitchNode(location(t), cond, bodies);
+        }
+}
+
+List<CaseNode> case_clauses():
+{
+    List<CaseNode> clauses = new ArrayList<CaseNode>();
+    CaseNode n;
+}
+{
+    (n=case_clause() { clauses.add(n); })*
+        {
+            return clauses;
+        }
+}
+
+CaseNode case_clause():
+{
+    List<ExprNode> values;
+    BlockNode body;
+}
+{
+    (
+      LOOKAHEAD(2) // Default clause
+      <CASE><ELSE> body=case_body() { return new CaseElseNode(body.location(), body); }
+    | values=cases()body=case_body()) { return new CaseNode(body.location(), values, body); }
+}
+
+List<ExprNode> cases():
+{
+    List<ExprNode> values = new ArrayList<ExprNode>();
+    ExprNode n;
+}
+{
+    (<CASE> n=primary() { values.add(n); })+
+        {
+            return values;
+        }
+}
+
+BlockNode case_body():
+{
+    LinkedList<StmtNode> stmts = new LinkedList<StmtNode>();
+    StmtNode s;
+}
+{
+    (s=stmt() { if (s != null) stmts.add(s); })+
+        {
+            return new BlockNode(stmts.get(0).location(),
+                                 new ArrayList<DefinedVariable>(),
+                                 stmts);
+        }
+}
+
+ExprNode primary():
+{
+    Token t;
+    ExprNode n;
+}
+{
+      t=<INTEGER_LITERAL>
+        {
+            return integerNode(location(t), t.image);
+        }
+    | t=<REAL_LITERAL>
+        {
+            return realNode(location(t), t.image);
+        }
+    | t=<STRING_LITERAL>
+        {
+            return new StringLiteralNode(location(t),
+                StringTypeRef.stringRef(),
+                stringValue(t.image));
+        }
+    | t=<IDENTIFIER>
+        {
+            return new VariableNode(location(t), t.image);
+        }
+    | "(" n=expr() ")"
+        {
+            return n;
+        }
+}
