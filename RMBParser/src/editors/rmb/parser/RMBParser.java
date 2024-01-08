@@ -1050,10 +1050,19 @@ public class RMBParser implements RMBParserConstants {
   final public StmtNode stmt() throws ParseException {
     StmtNode n = null;
     ExprNode e = null;
+    List<ExprNode> args = new ArrayList<ExprNode>();
+    Token t;
     if (jj_2_8(3)) {
       n = option_base_stmt();
+      jj_consume_token(NEWLINE);
     } else if (jj_2_9(2)) {
       n = labeled_stmt();
+      jj_consume_token(NEWLINE);
+    } else if (jj_2_10(3)) {
+      t = jj_consume_token(IDENTIFIER);
+      args = args();
+      jj_consume_token(NEWLINE);
+                                                           e = new VariableNode(location(t), t.image); e = new FuncallNode(e, args); n = new ExprStmtNode(e.location(), e);
     } else {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case NOT:
@@ -1065,7 +1074,8 @@ public class RMBParser implements RMBParserConstants {
       case 59:
       case 60:
         e = expr();
-                 n = new ExprStmtNode(e.location(), e);
+        jj_consume_token(NEWLINE);
+                          n = new ExprStmtNode(e.location(), e);
         break;
       case LOOP:
         n = loop_stmt();
@@ -1125,11 +1135,11 @@ public class RMBParser implements RMBParserConstants {
 
   final public GotoNode goto_stmt() throws ParseException {
   Token t, name;
-    if (jj_2_10(2)) {
+    if (jj_2_11(2)) {
       t = jj_consume_token(GOTO);
       name = jj_consume_token(INTEGER_LITERAL);
                                                    {if (true) return new GotoNode(location(t), name.image, false);}
-    } else if (jj_2_11(2)) {
+    } else if (jj_2_12(2)) {
       t = jj_consume_token(GOTO);
       name = jj_consume_token(IDENTIFIER);
                                              {if (true) return new GotoNode(location(t), name.image, true);}
@@ -1142,11 +1152,11 @@ public class RMBParser implements RMBParserConstants {
 
   final public GoSubNode gosub_stmt() throws ParseException {
   Token t, name;
-    if (jj_2_12(2)) {
+    if (jj_2_13(2)) {
       t = jj_consume_token(GOSUB);
       name = jj_consume_token(INTEGER_LITERAL);
                                                     {if (true) return new GoSubNode(location(t), name.image, false);}
-    } else if (jj_2_13(2)) {
+    } else if (jj_2_14(2)) {
       t = jj_consume_token(GOSUB);
       name = jj_consume_token(IDENTIFIER);
                                               {if (true) return new GoSubNode(location(t), name.image, true);}
@@ -1160,7 +1170,7 @@ public class RMBParser implements RMBParserConstants {
   final public ReturnNode return_stmt() throws ParseException {
     Token t;
     ExprNode expr;
-    if (jj_2_14(2)) {
+    if (jj_2_15(2)) {
       t = jj_consume_token(RETURN);
                                 {if (true) return new ReturnNode(location(t), null);}
     } else {
@@ -1269,6 +1279,7 @@ public class RMBParser implements RMBParserConstants {
     ExprNode cond = null;
     StmtNode stmt = null;
     t = jj_consume_token(LOOP);
+    jj_consume_token(NEWLINE);
     label_18:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -1317,13 +1328,14 @@ public class RMBParser implements RMBParserConstants {
       case 59:
       case 60:
         stmt = stmt();
-                           stmts.add(stmt);
+                                    stmts.add(stmt);
         break;
       case EXIT:
         jj_consume_token(EXIT);
         jj_consume_token(IF);
         cond = expr();
-                              conds.add(cond);
+        jj_consume_token(NEWLINE);
+                                       conds.add(cond);
         break;
       default:
         jj_la1[37] = jj_gen;
@@ -1415,7 +1427,7 @@ public class RMBParser implements RMBParserConstants {
   final public CaseNode case_clause() throws ParseException {
     List<ExprNode> values;
     BlockNode body;
-    if (jj_2_15(2)) {
+    if (jj_2_16(2)) {
       jj_consume_token(CASE);
       jj_consume_token(ELSE);
       body = case_body();
@@ -1637,36 +1649,49 @@ public class RMBParser implements RMBParserConstants {
     finally { jj_save(14, xla); }
   }
 
-  private boolean jj_3R_34() {
+  private boolean jj_2_16(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_16(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(15, xla); }
+  }
+
+  private boolean jj_3R_36() {
     if (jj_scan_token(REAL)) return true;
     return false;
   }
 
-  private boolean jj_3R_29() {
+  private boolean jj_3R_30() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_33()) {
+    if (jj_3R_35()) {
     jj_scanpos = xsp;
-    if (jj_3R_34()) {
+    if (jj_3R_36()) {
     jj_scanpos = xsp;
-    if (jj_3R_35()) return true;
+    if (jj_3R_37()) return true;
     }
     }
     return false;
   }
 
-  private boolean jj_3R_33() {
+  private boolean jj_3R_35() {
     if (jj_scan_token(INTEGER)) return true;
     return false;
   }
 
   private boolean jj_3R_26() {
-    if (jj_3R_32()) return true;
+    if (jj_3R_33()) return true;
     return false;
   }
 
-  private boolean jj_3R_31() {
+  private boolean jj_3R_32() {
     if (jj_scan_token(IDENTIFIER)) return true;
+    return false;
+  }
+
+  private boolean jj_3_16() {
+    if (jj_scan_token(CASE)) return true;
+    if (jj_scan_token(ELSE)) return true;
     return false;
   }
 
@@ -1676,53 +1701,47 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_39() {
-    if (jj_3R_40()) return true;
+  private boolean jj_3R_41() {
+    if (jj_3R_44()) return true;
     return false;
   }
 
-  private boolean jj_3_15() {
-    if (jj_scan_token(CASE)) return true;
-    if (jj_scan_token(ELSE)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_38() {
+  private boolean jj_3R_40() {
     if (jj_scan_token(NOT)) return true;
     if (jj_3R_26()) return true;
     return false;
   }
 
-  private boolean jj_3R_37() {
+  private boolean jj_3R_39() {
     if (jj_scan_token(60)) return true;
     if (jj_3R_26()) return true;
     return false;
   }
 
-  private boolean jj_3R_32() {
+  private boolean jj_3R_33() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_36()) {
-    jj_scanpos = xsp;
-    if (jj_3R_37()) {
-    jj_scanpos = xsp;
     if (jj_3R_38()) {
     jj_scanpos = xsp;
-    if (jj_3R_39()) return true;
+    if (jj_3R_39()) {
+    jj_scanpos = xsp;
+    if (jj_3R_40()) {
+    jj_scanpos = xsp;
+    if (jj_3R_41()) return true;
     }
     }
     }
     return false;
   }
 
-  private boolean jj_3R_36() {
+  private boolean jj_3R_38() {
     if (jj_scan_token(59)) return true;
     if (jj_3R_26()) return true;
     return false;
   }
 
   private boolean jj_3R_25() {
-    if (jj_3R_30()) return true;
+    if (jj_3R_31()) return true;
     return false;
   }
 
@@ -1732,7 +1751,7 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_54() {
+  private boolean jj_3R_49() {
     if (jj_3R_55()) return true;
     Token xsp;
     while (true) {
@@ -1742,7 +1761,7 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3_14() {
+  private boolean jj_3_15() {
     if (jj_scan_token(RETURN)) return true;
     return false;
   }
@@ -1771,20 +1790,20 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_40() {
-    if (jj_3R_41()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_42()) { jj_scanpos = xsp; break; }
-    }
+  private boolean jj_3R_48() {
+    if (jj_scan_token(53)) return true;
+    if (jj_3R_29()) return true;
+    if (jj_scan_token(54)) return true;
     return false;
   }
 
-  private boolean jj_3R_42() {
-    if (jj_scan_token(53)) return true;
-    if (jj_3R_48()) return true;
-    if (jj_scan_token(54)) return true;
+  private boolean jj_3R_44() {
+    if (jj_3R_47()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_48()) { jj_scanpos = xsp; break; }
+    }
     return false;
   }
 
@@ -1846,13 +1865,13 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3_13() {
+  private boolean jj_3_14() {
     if (jj_scan_token(GOSUB)) return true;
     if (jj_scan_token(IDENTIFIER)) return true;
     return false;
   }
 
-  private boolean jj_3_12() {
+  private boolean jj_3_13() {
     if (jj_scan_token(GOSUB)) return true;
     if (jj_scan_token(INTEGER_LITERAL)) return true;
     return false;
@@ -1865,9 +1884,21 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
+  private boolean jj_3_12() {
+    if (jj_scan_token(GOTO)) return true;
+    if (jj_scan_token(IDENTIFIER)) return true;
+    return false;
+  }
+
   private boolean jj_3R_62() {
     if (jj_scan_token(EXOR)) return true;
     if (jj_3R_61()) return true;
+    return false;
+  }
+
+  private boolean jj_3_11() {
+    if (jj_scan_token(GOTO)) return true;
+    if (jj_scan_token(INTEGER_LITERAL)) return true;
     return false;
   }
 
@@ -1890,15 +1921,10 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3_11() {
-    if (jj_scan_token(GOTO)) return true;
-    if (jj_scan_token(IDENTIFIER)) return true;
-    return false;
-  }
-
-  private boolean jj_3_10() {
-    if (jj_scan_token(GOTO)) return true;
-    if (jj_scan_token(INTEGER_LITERAL)) return true;
+  private boolean jj_3R_54() {
+    if (jj_scan_token(53)) return true;
+    if (jj_3R_42()) return true;
+    if (jj_scan_token(54)) return true;
     return false;
   }
 
@@ -1929,10 +1955,9 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_47() {
-    if (jj_scan_token(53)) return true;
-    if (jj_3R_49()) return true;
-    if (jj_scan_token(54)) return true;
+  private boolean jj_3R_28() {
+    if (jj_scan_token(IDENTIFIER)) return true;
+    if (jj_scan_token(56)) return true;
     return false;
   }
 
@@ -1946,54 +1971,53 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_28() {
-    if (jj_scan_token(IDENTIFIER)) return true;
-    if (jj_scan_token(56)) return true;
-    return false;
-  }
-
   private boolean jj_3R_53() {
-    if (jj_scan_token(57)) return true;
-    if (jj_3R_49()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_46() {
     if (jj_scan_token(IDENTIFIER)) return true;
     return false;
   }
 
-  private boolean jj_3R_50() {
-    if (jj_3R_49()) return true;
+  private boolean jj_3R_43() {
+    if (jj_scan_token(57)) return true;
+    if (jj_3R_42()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_34() {
+    if (jj_3R_42()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_53()) { jj_scanpos = xsp; break; }
+      if (jj_3R_43()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
 
-  private boolean jj_3R_48() {
+  private boolean jj_3R_52() {
+    if (jj_scan_token(STRING_LITERAL)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_29() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_50()) jj_scanpos = xsp;
+    if (jj_3R_34()) jj_scanpos = xsp;
     return false;
   }
 
   private boolean jj_3R_24() {
-    if (jj_3R_30()) return true;
     if (jj_3R_31()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_45() {
-    if (jj_scan_token(STRING_LITERAL)) return true;
+    if (jj_3R_32()) return true;
     return false;
   }
 
   private boolean jj_3R_77() {
     if (jj_scan_token(DIV)) return true;
     if (jj_3R_26()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_51() {
+    if (jj_scan_token(REAL_LITERAL)) return true;
     return false;
   }
 
@@ -2010,6 +2034,13 @@ public class RMBParser implements RMBParserConstants {
       xsp = jj_scanpos;
       if (jj_3R_70()) { jj_scanpos = xsp; break; }
     }
+    return false;
+  }
+
+  private boolean jj_3R_27() {
+    if (jj_scan_token(OPTION)) return true;
+    if (jj_scan_token(BASE)) return true;
+    if (jj_scan_token(INTEGER_LITERAL)) return true;
     return false;
   }
 
@@ -2041,44 +2072,32 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_44() {
-    if (jj_scan_token(REAL_LITERAL)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_27() {
-    if (jj_scan_token(OPTION)) return true;
-    if (jj_scan_token(BASE)) return true;
+  private boolean jj_3R_50() {
     if (jj_scan_token(INTEGER_LITERAL)) return true;
     return false;
   }
 
-  private boolean jj_3R_30() {
-    if (jj_3R_23()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_43() {
-    if (jj_scan_token(INTEGER_LITERAL)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_41() {
+  private boolean jj_3R_47() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_43()) {
+    if (jj_3R_50()) {
     jj_scanpos = xsp;
-    if (jj_3R_44()) {
+    if (jj_3R_51()) {
     jj_scanpos = xsp;
-    if (jj_3R_45()) {
+    if (jj_3R_52()) {
     jj_scanpos = xsp;
-    if (jj_3R_46()) {
+    if (jj_3R_53()) {
     jj_scanpos = xsp;
-    if (jj_3R_47()) return true;
+    if (jj_3R_54()) return true;
     }
     }
     }
     }
+    return false;
+  }
+
+  private boolean jj_3R_31() {
+    if (jj_3R_23()) return true;
     return false;
   }
 
@@ -2105,18 +2124,10 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_52() {
-    if (jj_3R_54()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_23() {
+  private boolean jj_3_10() {
+    if (jj_scan_token(IDENTIFIER)) return true;
     if (jj_3R_29()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3_6()) { jj_scanpos = xsp; break; }
-    }
+    if (jj_scan_token(NEWLINE)) return true;
     return false;
   }
 
@@ -2125,19 +2136,17 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_51() {
-    if (jj_3R_26()) return true;
-    if (jj_scan_token(61)) return true;
+  private boolean jj_3R_46() {
     if (jj_3R_49()) return true;
     return false;
   }
 
-  private boolean jj_3R_49() {
+  private boolean jj_3R_23() {
+    if (jj_3R_30()) return true;
     Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_51()) {
-    jj_scanpos = xsp;
-    if (jj_3R_52()) return true;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3_6()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
@@ -2147,7 +2156,24 @@ public class RMBParser implements RMBParserConstants {
     return false;
   }
 
-  private boolean jj_3R_35() {
+  private boolean jj_3R_45() {
+    if (jj_3R_26()) return true;
+    if (jj_scan_token(61)) return true;
+    if (jj_3R_42()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_42() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_45()) {
+    jj_scanpos = xsp;
+    if (jj_3R_46()) return true;
+    }
+    return false;
+  }
+
+  private boolean jj_3R_37() {
     if (jj_scan_token(COMPLEX)) return true;
     return false;
   }
@@ -2184,7 +2210,7 @@ public class RMBParser implements RMBParserConstants {
    private static void jj_la1_init_2() {
       jj_la1_2 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1f,0x1f,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,};
    }
-  final private JJCalls[] jj_2_rtns = new JJCalls[15];
+  final private JJCalls[] jj_2_rtns = new JJCalls[16];
   private boolean jj_rescan = false;
   private int jj_gc = 0;
 
@@ -2418,7 +2444,7 @@ public class RMBParser implements RMBParserConstants {
 
   private void jj_rescan_token() {
     jj_rescan = true;
-    for (int i = 0; i < 15; i++) {
+    for (int i = 0; i < 16; i++) {
     try {
       JJCalls p = jj_2_rtns[i];
       do {
@@ -2440,6 +2466,7 @@ public class RMBParser implements RMBParserConstants {
             case 12: jj_3_13(); break;
             case 13: jj_3_14(); break;
             case 14: jj_3_15(); break;
+            case 15: jj_3_16(); break;
           }
         }
         p = p.next;

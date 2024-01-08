@@ -224,7 +224,7 @@ PARSER_END(RMBParser)
 SPECIAL_TOKEN: { <SPACES: ([" ", "\t", "\f"])+> }
 
 // new line
-SPECIAL_TOKEN: { <NEWLINE: (["\n", "\r"])+> }
+TOKEN: { <NEWLINE: (["\n", "\r"])+> }
 
 // line comment
 SPECIAL_TOKEN: {
@@ -750,11 +750,14 @@ StmtNode stmt():
 {
     StmtNode n = null;
     ExprNode e = null;
+    List<ExprNode> args = new ArrayList<ExprNode>();
+    Token t;
 }
 {
-    ( LOOKAHEAD(3)n=option_base_stmt()
- 	| LOOKAHEAD(2)n=labeled_stmt()
-    | e=expr() { n = new ExprStmtNode(e.location(), e); }
+    ( LOOKAHEAD(3)n=option_base_stmt()<NEWLINE>
+ 	| LOOKAHEAD(2)n=labeled_stmt()<NEWLINE>
+ 	| LOOKAHEAD(3)t=<IDENTIFIER>args=args()<NEWLINE> { e = new VariableNode(location(t), t.image); e = new FuncallNode(e, args); n = new ExprStmtNode(e.location(), e);}
+    | e=expr()<NEWLINE> { n = new ExprStmtNode(e.location(), e); }
     | n=loop_stmt()
     | n=repeat_stmt()
     | n=if_stmt()
@@ -872,8 +875,8 @@ LoopNode loop_stmt():
     StmtNode stmt = null;
 }
 {
-    t=<LOOP>(stmt=stmt() { stmts.add(stmt); }
-    | <EXIT><IF>cond=expr() { conds.add(cond); })*<END><LOOP>
+    t=<LOOP><NEWLINE>(stmt=stmt() { stmts.add(stmt); }
+    | <EXIT><IF>cond=expr()<NEWLINE> { conds.add(cond); })*<END><LOOP>
         {
             return new LoopNode(location(t), conds, stmts);
         }
