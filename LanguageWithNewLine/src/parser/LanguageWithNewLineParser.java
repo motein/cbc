@@ -2,17 +2,7 @@
 package parser;
 import java.io.*;
 
-class LanguageWithNewLineParser implements LanguageWithNewLineParserConstants {
-    static public void main(String[] args) {
-        for (String arg : args) {
-            try {
-                System.out.println(evaluate(arg));
-            }
-            catch (ParseException ex) {
-                System.err.println(ex.getMessage());
-            }
-        }
-    }
+public class LanguageWithNewLineParser implements LanguageWithNewLineParserConstants {
 
     static public long evaluate(String src) throws ParseException {
         Reader reader = new StringReader(src);

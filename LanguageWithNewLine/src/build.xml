@@ -38,6 +38,8 @@
     <target name="clean-build" depends="init">
         <delete dir="${build.dir}" />
         <delete file="${build.parser.dir}/LanguageWithNewLineParser.java" />
+    	<delete file="${build.parser.dir}/LanguageWithNewLineParserConstants.java" />
+    	<delete file="${build.parser.dir}/LanguageWithNewLineParserTokenManager.java" />
         <delete file="${build.parser.dir}/ParseException.java" />
         <delete file="${build.parser.dir}/Token.java" />
         <delete file="${build.parser.dir}/TokenMgrError.java" />
