@@ -9,20 +9,24 @@ import java.io.*;
 
 public class LanguageWithNewLineParser {
 
-    static public long evaluate(String src) throws ParseException {
+    static public long evaluateAdd(String src) throws ParseException {
         Reader reader = new StringReader(src);
-        return new LanguageWithNewLineParser(reader).expr();
+        return new LanguageWithNewLineParser(reader).add();
     }
 }
 PARSER_END(LanguageWithNewLineParser)
 
-SKIP: { <[" ", "\t", "\r", "\n"]> }
+SKIP: { <[" ", "\t"]> }
+TOKEN: {
+    <IDENTIFIER: ["a"-"z"] (["a"-"z", "0"-"9"])*>
+    | <NEWLINE: ("\r\n" | "\r" | "\n")>
+}
 
 TOKEN: {
     <INTEGER:(["0"-"9"])+>
 }
 
-long expr():
+long add():
 {
     Token x, y;
 }

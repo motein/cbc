@@ -4,15 +4,15 @@ import java.io.*;
 
 public class LanguageWithNewLineParser implements LanguageWithNewLineParserConstants {
 
-    static public long evaluate(String src) throws ParseException {
+    static public long evaluateAdd(String src) throws ParseException {
         Reader reader = new StringReader(src);
-        return new LanguageWithNewLineParser(reader).expr();
+        return new LanguageWithNewLineParser(reader).add();
     }
 
-  final public long expr() throws ParseException {
+  final public long add() throws ParseException {
     Token x, y;
     x = jj_consume_token(INTEGER);
-    jj_consume_token(3);
+    jj_consume_token(5);
     y = jj_consume_token(INTEGER);
     jj_consume_token(0);
             {if (true) return Long.parseLong(x.image)+ Long.parseLong(y.image);}
@@ -151,7 +151,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[4];
+    boolean[] la1tokens = new boolean[6];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -165,7 +165,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
         }
       }
     }
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 6; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

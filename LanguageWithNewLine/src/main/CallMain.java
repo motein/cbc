@@ -7,7 +7,7 @@ public class CallMain {
 
 	public static void main(String[] args) {
         try {
-            System.out.println(LanguageWithNewLineParser.evaluate("2+4"));
+            System.out.println(LanguageWithNewLineParser.evaluateAdd("2+4"));
         }
         catch (ParseException ex) {
             System.err.println(ex.getMessage());
