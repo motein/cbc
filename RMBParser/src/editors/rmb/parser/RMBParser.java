@@ -335,6 +335,7 @@ public class RMBParser implements RMBParserConstants {
     jj_consume_token(ALL);
     jj_consume_token(FROM);
     stringToken = jj_consume_token(STRING_LITERAL);
+    jj_consume_token(NEWLINE);
                 String libPath = stringToken.image;
             {if (true) return libPath.substring(1, libPath.length()-1);} // remove "
 
@@ -486,8 +487,10 @@ public class RMBParser implements RMBParserConstants {
     jj_consume_token(53);
     ps = params();
     jj_consume_token(54);
+    jj_consume_token(NEWLINE);
     body = block();
     jj_consume_token(SUBEND);
+    jj_consume_token(NEWLINE);
                 System.err.println("Labeled SUB -> " + t.toString());
                 TypeRef t1 = VoidTypeRef.voidRef(location(t));
                 TypeRef t2 = new FunctionTypeRef(t1, ps.parametersTypeRef());
@@ -505,8 +508,10 @@ public class RMBParser implements RMBParserConstants {
     jj_consume_token(53);
     ps = params();
     jj_consume_token(54);
+    jj_consume_token(NEWLINE);
     body = block();
     jj_consume_token(SUBEND);
+    jj_consume_token(NEWLINE);
                 TypeRef t1 = VoidTypeRef.voidRef(location(t));
                 TypeRef t2 = new FunctionTypeRef(t1, ps.parametersTypeRef());
             {if (true) return new DefinedFunction(true, new TypeNode(t2), n, ps, body);}
@@ -535,6 +540,7 @@ public class RMBParser implements RMBParserConstants {
       name = name();
                 defs.add(new DefinedVariable(true, type, name));
     }
+    jj_consume_token(NEWLINE);
             {if (true) return defs;}
     throw new Error("Missing return statement in function");
   }

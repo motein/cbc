@@ -394,7 +394,7 @@ String import_stmt(): // import single library
   	Token stringToken;
 }
 {
-    <LOADSUB><ALL><FROM>stringToken=<STRING_LITERAL>
+    <LOADSUB><ALL><FROM>stringToken=<STRING_LITERAL><NEWLINE>
         {
           	String libPath = stringToken.image;
             return libPath.substring(1, libPath.length()-1); // remove "
@@ -462,7 +462,7 @@ DefinedFunction defun_with_label():
     BlockNode body;
 }
 {
-  	t=<IDENTIFIER>":"<SUB>n=name() "("ps=params() ")"body=block()<SUBEND>
+  	t=<IDENTIFIER>":"<SUB>n=name() "("ps=params() ")"<NEWLINE>body=block()<SUBEND><NEWLINE>
         {
           	System.err.println("Labeled SUB -> " + t.toString());
           	TypeRef t1 = VoidTypeRef.voidRef(location(t));
@@ -479,7 +479,7 @@ DefinedFunction defun_without_label():
     BlockNode body;
 }
 {
-    t=<SUB>n=name() "(" ps=params() ")" body=block()<SUBEND>
+    t=<SUB>n=name() "(" ps=params() ")"<NEWLINE> body=block()<SUBEND><NEWLINE>
         {
           	TypeRef t1 = VoidTypeRef.voidRef(location(t));
         	TypeRef t2 = new FunctionTypeRef(t1, ps.parametersTypeRef());
@@ -501,7 +501,7 @@ List<DefinedVariable> defvars():
         (","name=name()
         {
           	defs.add(new DefinedVariable(true, type, name));
-        })*
+        })*<NEWLINE>
         {
             return defs;
         }
