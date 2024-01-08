@@ -6,12 +6,18 @@ options {
 PARSER_BEGIN(LanguageWithNewLineParser)
 package parser;
 import java.io.*;
+import java.util.*;
 
 public class LanguageWithNewLineParser {
 
     static public long evaluateAdd(String src) throws ParseException {
         Reader reader = new StringReader(src);
         return new LanguageWithNewLineParser(reader).add();
+    }
+
+    static public List<List<Token>> evaluateLines(String src) throws ParseException {
+        Reader reader = new StringReader(src);
+        return new LanguageWithNewLineParser(reader).lines();
     }
 }
 PARSER_END(LanguageWithNewLineParser)
@@ -35,4 +41,25 @@ long add():
         {
             return Long.parseLong(x.image)+ Long.parseLong(y.image);
         }
+}
+
+List<List<Token>> lines() :
+{
+  List<List<Token>> finaltokens = new ArrayList<List<Token>>();
+  List<Token> tokens;
+}
+{
+    (tokens=line() { finaltokens.add(tokens); } | <NEWLINE>)* { return finaltokens; }
+}
+
+List<Token> line() :
+{
+  	Token t;
+  	List<Token> tokens = new ArrayList<Token>();
+}
+{
+    t=<IDENTIFIER> { tokens.add(t); }("," t=<IDENTIFIER> { tokens.add(t); })*
+	{
+      return tokens;
+    }
 }
