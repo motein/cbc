@@ -1,0 +1,44 @@
+options {
+    STATIC = false;
+    JDK_VERSION = "1.8";
+}
+
+PARSER_BEGIN(LanguageWithNewLineParser)
+package parser;
+import java.io.*;
+
+class LanguageWithNewLineParser {
+    static public void main(String[] args) {
+        for (String arg : args) {
+            try {
+                System.out.println(evaluate(arg));
+            }
+            catch (ParseException ex) {
+                System.err.println(ex.getMessage());
+            }
+        }
+    }
+
+    static public long evaluate(String src) throws ParseException {
+        Reader reader = new StringReader(src);
+        return new LanguageWithNewLineParser(reader).expr();
+    }
+}
+PARSER_END(LanguageWithNewLineParser)
+
+SKIP: { <[" ", "\t", "\r", "\n"]> }
+
+TOKEN: {
+    <INTEGER:(["0"-"9"])+>
+}
+
+long expr():
+{
+    Token x, y;
+}
+{
+    x=<INTEGER> "+" y=<INTEGER> <EOF>
+        {
+            return Long.parseLong(x.image)+ Long.parseLong(y.image);
+        }
+}
