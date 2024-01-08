@@ -802,7 +802,7 @@ GotoNode goto_stmt():
 { Token t, name; }
 {
   
-    LOOKAHEAD(2) t=<GOTO> name=<INTEGER_LITERAL> { return new GotoNode(location(t), name.image, false); }
+    LOOKAHEAD(2) t=<GOTO>name=<INTEGER_LITERAL> { return new GotoNode(location(t), name.image, false); }
   | LOOKAHEAD(2) t=<GOTO>name=<IDENTIFIER> { return new GotoNode(location(t), name.image, true); }
 }
 
