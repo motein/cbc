@@ -17,6 +17,11 @@ public class CallMain {
             		System.out.println(t.image);
             	}
             }
+            
+            List<String> stmtList = LanguageWithNewLineParser.evaluateStmts("c!fdfdsfas\na,b,c!dfadfa\ncccc");
+            for (String t2 : stmtList) {
+            	System.out.println(t2);
+            }
         }
         catch (ParseException ex) {
             System.err.println(ex.getMessage());

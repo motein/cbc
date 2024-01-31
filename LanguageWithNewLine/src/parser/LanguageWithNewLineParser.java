@@ -15,6 +15,11 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
         return new LanguageWithNewLineParser(reader).lines();
     }
 
+        static public List<String> evaluateStmts(String src) throws ParseException {
+        Reader reader = new StringReader(src);
+        return new LanguageWithNewLineParser(reader).stmts();
+    }
+
   final public long add() throws ParseException {
     Token x, y;
     x = jj_consume_token(INTEGER);
@@ -84,6 +89,65 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
     throw new Error("Missing return statement in function");
   }
 
+  final public List<String> stmts() throws ParseException {
+  List<String> all_stmts = new ArrayList<String>();
+  String ret;
+    label_3:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case IDENTIFIER:
+      case NEWLINE:
+      case LINE_COMMENT:
+        ;
+        break;
+      default:
+        jj_la1[3] = jj_gen;
+        break label_3;
+      }
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case IDENTIFIER:
+        ret = stmt();
+                  all_stmts.add(ret);
+        break;
+      case LINE_COMMENT:
+        jj_consume_token(LINE_COMMENT);
+        break;
+      case NEWLINE:
+        jj_consume_token(NEWLINE);
+        break;
+      default:
+        jj_la1[4] = jj_gen;
+        jj_consume_token(-1);
+        throw new ParseException();
+      }
+    }
+                                                                         {if (true) return all_stmts;}
+    throw new Error("Missing return statement in function");
+  }
+
+  final public String stmt() throws ParseException {
+        Token t;
+        String ret = "";
+    t = jj_consume_token(IDENTIFIER);
+                     ret = ret + " " + t.image;
+    label_4:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 7:
+        ;
+        break;
+      default:
+        jj_la1[5] = jj_gen;
+        break label_4;
+      }
+      jj_consume_token(7);
+      t = jj_consume_token(IDENTIFIER);
+                                                                       ret = ret + " " + t.image;
+    }
+        {if (true) return ret;}
+    throw new Error("Missing return statement in function");
+  }
+
   /** Generated Token Manager. */
   public LanguageWithNewLineParserTokenManager token_source;
   SimpleCharStream jj_input_stream;
@@ -93,13 +157,13 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
   public Token jj_nt;
   private int jj_ntk;
   private int jj_gen;
-  final private int[] jj_la1 = new int[3];
+  final private int[] jj_la1 = new int[6];
   static private int[] jj_la1_0;
   static {
       jj_la1_init_0();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x1c,0x1c,0x80,};
+      jj_la1_0 = new int[] {0x1c,0x1c,0x80,0x1c,0x1c,0x80,};
    }
 
   /** Constructor with InputStream. */
@@ -113,7 +177,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 3; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -127,7 +191,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 3; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Constructor. */
@@ -137,7 +201,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 3; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -147,7 +211,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 3; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Constructor with generated Token Manager. */
@@ -156,7 +220,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 3; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   /** Reinitialise. */
@@ -165,7 +229,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 3; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 6; i++) jj_la1[i] = -1;
   }
 
   private Token jj_consume_token(int kind) throws ParseException {
@@ -221,7 +285,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
       la1tokens[jj_kind] = true;
       jj_kind = -1;
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 6; i++) {
       if (jj_la1[i] == jj_gen) {
         for (int j = 0; j < 32; j++) {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
