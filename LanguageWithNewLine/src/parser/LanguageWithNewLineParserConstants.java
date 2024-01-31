@@ -15,7 +15,9 @@ public interface LanguageWithNewLineParserConstants {
   /** RegularExpression Id. */
   int NEWLINE = 3;
   /** RegularExpression Id. */
-  int INTEGER = 4;
+  int LINE_COMMENT = 4;
+  /** RegularExpression Id. */
+  int INTEGER = 5;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -26,6 +28,7 @@ public interface LanguageWithNewLineParserConstants {
     "<token of kind 1>",
     "<IDENTIFIER>",
     "<NEWLINE>",
+    "<LINE_COMMENT>",
     "<INTEGER>",
     "\"+\"",
     "\",\"",

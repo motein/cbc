@@ -24,8 +24,9 @@ PARSER_END(LanguageWithNewLineParser)
 
 SKIP: { <[" ", "\t"]> }
 TOKEN: {
-    <IDENTIFIER: ["a"-"z"] (["a"-"z", "0"-"9"])*>
+	<IDENTIFIER: ["a"-"z"] (["a"-"z", "0"-"9"])*>
     | <NEWLINE: ("\r\n" | "\r" | "\n")>
+    | <LINE_COMMENT: "!" (~["\n", "\r"])* ("\n" | "\r\n" | "\r")?>
 }
 
 TOKEN: {
@@ -49,7 +50,7 @@ List<List<Token>> lines() :
   List<Token> tokens;
 }
 {
-    (tokens=line() { finaltokens.add(tokens); } | <NEWLINE>)* { return finaltokens; }
+    (tokens=line() { finaltokens.add(tokens); } | <LINE_COMMENT> | <NEWLINE>)* { return finaltokens; }
 }
 
 List<Token> line() :

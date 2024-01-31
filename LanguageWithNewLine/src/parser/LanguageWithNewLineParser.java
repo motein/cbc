@@ -18,7 +18,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
   final public long add() throws ParseException {
     Token x, y;
     x = jj_consume_token(INTEGER);
-    jj_consume_token(5);
+    jj_consume_token(6);
     y = jj_consume_token(INTEGER);
     jj_consume_token(0);
             {if (true) return Long.parseLong(x.image)+ Long.parseLong(y.image);}
@@ -33,6 +33,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case IDENTIFIER:
       case NEWLINE:
+      case LINE_COMMENT:
         ;
         break;
       default:
@@ -44,6 +45,9 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
         tokens = line();
                      finaltokens.add(tokens);
         break;
+      case LINE_COMMENT:
+        jj_consume_token(LINE_COMMENT);
+        break;
       case NEWLINE:
         jj_consume_token(NEWLINE);
         break;
@@ -53,7 +57,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
         throw new ParseException();
       }
     }
-                                                                {if (true) return finaltokens;}
+                                                                                 {if (true) return finaltokens;}
     throw new Error("Missing return statement in function");
   }
 
@@ -65,14 +69,14 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
     label_2:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case 6:
+      case 7:
         ;
         break;
       default:
         jj_la1[2] = jj_gen;
         break label_2;
       }
-      jj_consume_token(6);
+      jj_consume_token(7);
       t = jj_consume_token(IDENTIFIER);
                                                            tokens.add(t);
     }
@@ -95,7 +99,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
       jj_la1_init_0();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0xc,0xc,0x40,};
+      jj_la1_0 = new int[] {0x1c,0x1c,0x80,};
    }
 
   /** Constructor with InputStream. */
@@ -212,7 +216,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[7];
+    boolean[] la1tokens = new boolean[8];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -226,7 +230,7 @@ public class LanguageWithNewLineParser implements LanguageWithNewLineParserConst
         }
       }
     }
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 8; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
