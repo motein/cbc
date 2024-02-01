@@ -32,6 +32,7 @@ public interface LanguageWithNewLineParserConstants {
     "<INTEGER>",
     "\"+\"",
     "\",\"",
+    "\"$\"",
   };
 
 }

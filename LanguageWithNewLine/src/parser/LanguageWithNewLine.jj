@@ -85,7 +85,9 @@ String stmt() :
   	String ret = "";
 }
 {
-    t=<IDENTIFIER> { ret = ret + " " + t.image; }("," t=<IDENTIFIER> { ret = ret + " " + t.image; })*
+    (t=<IDENTIFIER> { ret = ret + " " + t.image; })
+    ("$" { ret = ret + "$"; })?
+    ("," (t=<IDENTIFIER> { ret = ret + " " + t.image; })("$" { ret = ret + "$"; })?)*
 	{
       	return ret;
     }
